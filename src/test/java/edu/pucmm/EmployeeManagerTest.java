@@ -136,7 +136,7 @@ public class EmployeeManagerTest {
                 "Se debe lanzar una EmployeeNotFoundException al intentar actualizar la posición de employee2 no agregado al manager");
     }
 
-    static Stream<Arguments> baseSalaryArguments() {
+    static Stream<Arguments> baseSalary() {
         Position juniorDeveloper = new Position("1", "Junior Developer", 30000, 50000);
         Position seniorDeveloper = new Position("2", "Senior Developer", 60000, 90000);
         return Stream.of(
@@ -148,11 +148,18 @@ public class EmployeeManagerTest {
     }
 
     @ParameterizedTest(name = "{index} => Position: {0}, Salary: {1}")
-    @MethodSource("baseSalaryArguments")
-    public void testIsSalaryValidForPosition(Position position, double salary, boolean expectedValid) {
+    @MethodSource("baseSalary")
+    public void testIsSalaryValidForPosition(Position position, double salary, boolean isValid) {
+        // TODO: Verificar la lógica de validación de salario para diferentes posiciones.
+        // - Verificar que un salario de 40000 es válido para juniorDeveloper.
+        // - Verificar que un salario de 60000 no es válido para juniorDeveloper.
+        // - Verificar que un salario de 70000 es válido para seniorDeveloper.
+        // - Verificar que un salario de 50000 no es válido para seniorDeveloper.
+
         EmployeeManager manager = new EmployeeManager();
-        assertEquals(expectedValid, manager.isSalaryValidForPosition(position, salary),
-                "Salario " + salary + " para la posición " + position.getName() + " debe ser " + (expectedValid ? "válido" : "inválido"));
+
+        assertEquals(isValid, manager.isSalaryValidForPosition(position, salary),
+                "Salario " + salary + " para la posición " + position.getName() + " debe ser " + (isValid ? "válido" : "inválido"));
     }
 
     @Test
@@ -178,7 +185,7 @@ public class EmployeeManagerTest {
         // TODO: Eliminar un empleado existente y verificar que no se lanza una excepción.
         // - Eliminar employee1 del employeeManager.
         // - Verificar que no se lanza ninguna excepción.
-        employeeManager.removeEmployee(employee1);
+        assertDoesNotThrow(() -> employeeManager.removeEmployee(employee1));
     }
 
     @Test
@@ -198,5 +205,47 @@ public class EmployeeManagerTest {
         // - Verificar que se lanza una DuplicateEmployeeException.
         assertThrows(DuplicateEmployeeException.class, () -> employeeManager.addEmployee(employee1),
                 "Se debe lanzar una DuplicateEmployeeException al intentar agregar un empleado duplicado");
+    }
+
+    @Test
+    public void testAddEmployeeWithDuplicateId() {
+        Employee employee3 = new Employee("1", "Alice", juniorDeveloper, 35000);
+
+        assertThrows(DuplicateEmployeeException.class, () -> {
+            employeeManager.addEmployee(employee3);
+        }, "Se debe lanzar una DuplicateEmployeeException al intentar agregar un empleado con un ID duplicado");
+    }
+
+    @Test
+    public void testAddEmployeeWithDuplicateName() {
+        Employee employee3 = new Employee("3", "John Doe", seniorDeveloper, 75000);
+
+        assertThrows(DuplicateEmployeeException.class, () -> {
+            employeeManager.addEmployee(employee3);
+        }, "Se debe lanzar una DuplicateEmployeeException al intentar agregar un empleado con un nombre duplicado");
+    }
+
+
+    static Stream<Arguments> salaryValidationArguments() {
+        Position junior = new Position("1", "Junior", 30000, 50000);
+
+        return Stream.of(
+                Arguments.of(junior, 40000, true),
+                Arguments.of(junior, 40000, true),
+                Arguments.of(junior, 60000, false),
+                Arguments.of(junior, 30000, true),
+                Arguments.of(junior, 50000, true),
+                Arguments.of(junior, 27000, true),
+                Arguments.of(junior, 25000, false),
+                Arguments.of(junior, -100, false),
+                Arguments.of(null, 40000, false)
+        );
+    }
+
+    @ParameterizedTest(name = "{index} => Position: {0}, Salary: {1}, Expected: {2}")
+    @MethodSource("salaryValidationArguments")
+    void testIsSalaryValidForPosition_Param(Position position, double salary, boolean expected) {
+        EmployeeManager manager = new EmployeeManager();
+        assertEquals(expected, manager.isSalaryValidForPosition(position, salary));
     }
 }

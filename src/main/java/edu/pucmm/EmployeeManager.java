@@ -19,10 +19,20 @@ public class EmployeeManager {
         this.employees = new ArrayList<>();
     }
 
+//    No se permite agregar empleados con salarios por debajo del 10% del salario mínimo de su posición.
     public void addEmployee(Employee employee) {
         if (employees.contains(employee)) {
             throw new DuplicateEmployeeException("Duplicate employee");
         }
+        //        No puede haber dos empleados con el mismo ID o nombre.
+        if(employeeExistsById(employee.getId())) {
+            throw new DuplicateEmployeeException("Employee with ID already exists");
+        }
+        //        No puede haber dos empleados con el mismo ID o nombre.
+        if(employeeExistsByName(employee.getName())) {
+            throw new DuplicateEmployeeException("Employee with name already exists");
+        }
+
         if (!isSalaryValidForPosition(employee.getPosition(), employee.getSalary())) {
             throw new InvalidSalaryException("Invalid salary for position");
         }
@@ -68,7 +78,30 @@ public class EmployeeManager {
         employee.setPosition(newPosition);
     }
 
+    // El método isSalaryValidForPosition(...) debe retornar false si:
+    // Si el salario está fuera de rango pero dentro del 10% inferior del mínimo permitido, se debe ajustar automáticamente al salario mínimo de la nueva posición.
     public boolean isSalaryValidForPosition(Position position, double salary) {
-        return salary >= position.getMinSalary() && salary <= position.getMaxSalary();
+        if (salary < 0 || position == null) return false;
+
+        double min = position.getMinSalary();
+        double max = position.getMaxSalary();
+
+        if (salary >= min && salary <= max) {
+            return true;
+        }
+
+        // <10% del mínimo permitido
+        return salary >= min * 0.9 && salary < min;
+
+        // >10% del máximo permitido
+    }
+
+    public boolean employeeExistsById(String id) {
+        employees.stream().anyMatch(employee -> employee.getId().equalsIgnoreCase(id));
+        return false;
+    }
+
+    public boolean employeeExistsByName(String name) {
+        return employees.stream().anyMatch(employee -> employee.getName().equalsIgnoreCase(name));
     }
 }
